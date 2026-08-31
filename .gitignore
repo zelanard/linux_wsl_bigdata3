@@ -2,9 +2,11 @@
 *
 
 # Allow Git to traverse directories
-# !*/
+!*/
 
 # Keep this file
-!.gitignore
+!./.gitignore
 
 # Files you want included
+!BigData/hadoop-3.5.0/etc/hadoop/hadoop-env.sh
+!.bashrc
