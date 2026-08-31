@@ -1,0 +1,10 @@
+# Ignore every file
+*
+
+# Allow Git to traverse directories
+# !*/
+
+# Keep this file
+!.gitignore
+
+# Files you want included
