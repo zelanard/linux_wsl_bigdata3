@@ -1,0 +1,1 @@
+/home/zelanard/BigData/stop-bigdata.sh

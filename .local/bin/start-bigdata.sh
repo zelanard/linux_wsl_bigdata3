@@ -1,0 +1,1 @@
+/home/zelanard/BigData/start-bigdata.sh

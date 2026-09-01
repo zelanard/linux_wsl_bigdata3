@@ -117,13 +117,21 @@ if ! shopt -oq posix; then
 fi
 
 #JONAS
-#Hadoop
+# Hadoop
 export HADOOP_HOME=/home/zelanard/BigData/hadoop-3.5.0
-export HADOOP_INSTALL=$HADOOP_HOME
-export HADOOP_MAPRED_HOME=$HADOOP_HOME
-export HADOOP_COMMON_HOME=$HADOOP_HOME
-export HADOOP_HDFS_HOME=$HADOOP_HOME
-export YARN_HOME=$HADOOP_HOME
-export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
-export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+export HADOOP_INSTALL="$HADOOP_HOME"
+export HADOOP_MAPRED_HOME="$HADOOP_HOME"
+export HADOOP_COMMON_HOME="$HADOOP_HOME"
+export HADOOP_HDFS_HOME="$HADOOP_HOME"
+export YARN_HOME="$HADOOP_HOME"
+export HADOOP_CONF_DIR="$HADOOP_HOME/etc/hadoop"
+export HADOOP_COMMON_LIB_NATIVE_DIR="$HADOOP_HOME/lib/native"
 export HADOOP_OPTS="-Djava.library.path=$HADOOP_COMMON_LIB_NATIVE_DIR"
+export PATH="$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH"
+
+# Spark
+export SPARK_HOME=/home/zelanard/BigData/spark-4.2.0-bin-hadoop3
+export PATH="$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH"
+
+#All
+export PATH="$HOME/.local/bin:$PATH"
