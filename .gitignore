@@ -10,3 +10,4 @@
 # Files you want included
 !BigData/hadoop-3.5.0/etc/hadoop/hadoop-env.sh
 !.bashrc
+!BigData/hadoop-3.5.0/hdfs
