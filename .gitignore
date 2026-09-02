@@ -15,4 +15,10 @@
 !start-bigdata.sh
 !stop-bigdata.sh
 
-!BigData/iris_/**
+# Iris source code
+!BigData/iris_/main.py
+!BigData/iris_/burning_plumber/*.py
+
+# Generated Python files
+BigData/iris_/burning_plumber/__pycache__/
+*.py[cod]
