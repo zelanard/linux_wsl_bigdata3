@@ -22,3 +22,6 @@
 # Generated Python files
 BigData/iris_/burning_plumber/__pycache__/
 *.py[cod]
+
+__pycache__/
+*.py[cod]
