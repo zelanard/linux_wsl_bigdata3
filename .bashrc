@@ -135,3 +135,103 @@ export PATH="$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH"
 
 #All
 export PATH="$HOME/.local/bin:$PATH"
+
+# IRIS ETL
+_iris_etl() {
+    local iris_project="$HOME/BigData/iris_"
+    local iris_spark="$HOME/BigData/spark-4.2.0-bin-hadoop3"
+    local iris_hadoop="$HOME/BigData/hadoop-3.5.0"
+
+    (
+        cd "$iris_project" || exit 1
+
+        HADOOP_HOME="$iris_hadoop" \
+        HADOOP_CONF_DIR="$iris_hadoop/etc/hadoop" \
+        "$iris_spark/bin/spark-submit" \
+            --master spark://localhost:7077 \
+            main.py "$@"
+    )
+}
+
+_iris_listen() {
+    local iris_project="$HOME/BigData/iris_"
+    local iris_spark="$HOME/BigData/spark-4.2.0-bin-hadoop3"
+    local iris_hadoop="$HOME/BigData/hadoop-3.5.0"
+    local iris_state_dir="$HOME/.local/state/burning_plumber"
+    local iris_log_file="$iris_state_dir/listener.log"
+    local iris_pid_file="$iris_state_dir/listener.pid"
+    local iris_listener_pid
+
+    if [[ -r "$iris_pid_file" ]]; then
+        read -r iris_listener_pid < "$iris_pid_file"
+        if [[ "$iris_listener_pid" =~ ^[0-9]+$ ]] \
+            && kill -0 "$iris_listener_pid" 2>/dev/null; then
+            echo "Iris listener is already running (PID $iris_listener_pid)"
+            return 0
+        fi
+    fi
+
+    command mkdir -p -- "$iris_state_dir" || return 1
+    (
+        nohup env \
+            HADOOP_HOME="$iris_hadoop" \
+            HADOOP_CONF_DIR="$iris_hadoop/etc/hadoop" \
+            "$iris_spark/bin/spark-submit" \
+                --master spark://localhost:7077 \
+                "$iris_project/main.py" listen "$@" \
+                </dev/null >"$iris_log_file" 2>&1 &
+    )
+
+    echo "Iris listener started in the background"
+    echo "Log: $iris_log_file"
+}
+
+iris() {
+    case "${1:-}" in
+        extract|flow|stop)
+            _iris_etl "$@"
+            ;;
+        listen)
+            shift
+            _iris_listen "$@"
+            ;;
+        print)
+            local iris_log_file iris_status
+            iris_log_file="$(mktemp)"
+            _iris_etl print 2>"$iris_log_file"
+            iris_status=$?
+            if (( iris_status != 0 )); then
+                command cat "$iris_log_file" >&2
+            fi
+            command rm -f -- "$iris_log_file"
+            return "$iris_status"
+            ;;
+        reset)
+            read -r -p "Delete all Iris pipeline data? [y/N] " answer
+            [[ "$answer" =~ ^[Yy]$ ]] && _iris_etl reset
+            ;;
+        help|"")
+            echo "Usage: iris {extract|flow|listen|print|stop|reset}"
+            ;;
+        *)
+            echo "Unknown Iris command: $1" >&2
+            return 1
+            ;;
+    esac
+}
+
+_iris_completion() {
+    local current="${COMP_WORDS[COMP_CWORD]}"
+
+    if (( COMP_CWORD == 1 )); then
+        COMPREPLY=(
+            $(compgen -W "extract flow listen print stop reset" -- "$current")
+        )
+    elif [[ "${COMP_WORDS[1]}" == "listen" ]]; then
+        COMPREPLY=(
+            $(compgen -W "--poll-interval" -- "$current")
+        )
+    fi
+}
+
+complete -F _iris_completion iris
