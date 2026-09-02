@@ -2,12 +2,14 @@
 
 """Download a CSV or JSON source directly to HDFS with curl."""
 
+import csv
+import io
 import os
 import subprocess
 import uuid
 from pathlib import Path
 
-from .formats import filename_from_url
+from .formats import file_format_from_location, filename_from_url
 
 
 INPUT_DIR = "/user/zelanard/Input_dir"
@@ -52,10 +54,33 @@ def stop_process(process):
             process.wait()
 
 
-def extract(source_url, input_dir=INPUT_DIR):
-    """Stream a CSV or JSON source directly into an HDFS file."""
+def _csv_header(column_names):
+    """Build an encoded CSV header without creating a local file."""
+
+    if not column_names or any(
+        not isinstance(name, str) or not name.strip()
+        for name in column_names
+    ):
+        raise ValueError("CSV-kolonnenavne skal være tekst og må ikke være tomme")
+
+    header = io.StringIO(newline="")
+    csv.writer(header, lineterminator="\n").writerow(column_names)
+    return header.getvalue().encode("utf-8")
+
+
+def extract(source_url, input_dir=INPUT_DIR, column_names=None):
+    """Stream a CSV or JSON source directly into an HDFS file.
+
+    When ``column_names`` is provided for a CSV source, its header is written
+    directly to the HDFS upload stream before the downloaded data.
+    """
 
     filename = filename_from_url(source_url)
+    file_format = file_format_from_location(source_url)
+    if column_names is not None and file_format != "csv":
+        raise ValueError("Kolonnenavne kan kun tilføjes til CSV-filer")
+
+    header = _csv_header(column_names) if column_names is not None else b""
     input_dir = input_dir.rstrip("/")
     destination = f"{input_dir}/{filename}"
     temporary = (
@@ -75,6 +100,12 @@ def extract(source_url, input_dir=INPUT_DIR):
             stdin=subprocess.PIPE,
             env=HDFS_ENV,
         )
+
+        # Kolonnenavnene skrives direkte til HDFS-pipen. Hverken headeren
+        # eller den downloadede fil gemmes på det lokale filsystem.
+        if header:
+            upload.stdin.write(header)
+            upload.stdin.flush()
 
         # Robusthed og integritet: curl fejler ved HTTP/netværksfejl,
         # bruger timeout og prøver igen. HTTPS validerer TLS-certifikatet.
@@ -122,7 +153,7 @@ def extract(source_url, input_dir=INPUT_DIR):
                 capture_output=True,
             ).stdout.strip()
         )
-        if size == 0:
+        if size <= len(header):
             raise RuntimeError("Datakilden returnerede ingen data")
 
         # En afbrudt download rammer kun den midlertidige HDFS-fil.

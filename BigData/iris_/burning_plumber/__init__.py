@@ -3,7 +3,7 @@
 from .extract import extract
 from .listener import listen, reset, stop
 from .load import load
-from .print import Print
+from .print import Print, print_hdfs
 from .transform import transform
 
 __all__ = [
@@ -14,4 +14,5 @@ __all__ = [
     "transform",
     "load",
     "Print",
+    "print_hdfs",
 ]

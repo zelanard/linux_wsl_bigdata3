@@ -14,7 +14,7 @@ HDFS_URI = "hdfs://localhost:9000"
 INPUT_DIR = "/user/zelanard/Input_dir"
 OUTPUT_DIR = f"{HDFS_URI}/user/zelanard/Output_dir"
 READ_OPTIONS = {
-    "header": False,
+    "header": True,
     "inferSchema": True,
 }
 COLUMN_NAMES = [
@@ -31,7 +31,11 @@ FILTER_VALUE = "Iris-setosa"
 def extract():
     """Download the configured source into HDFS."""
 
-    return mario.extract(SOURCE_URL, input_dir=INPUT_DIR)
+    return mario.extract(
+        SOURCE_URL,
+        input_dir=INPUT_DIR,
+        column_names=COLUMN_NAMES,
+    )
 
 
 def _source_name():
@@ -101,30 +105,7 @@ def listen(poll_interval=2.0):
 def print_output():
     """Print the current transformed HDFS output as a CLI table."""
 
-    spark = (
-        SparkSession.builder
-        .appName("IrisETLPrint")
-        .getOrCreate()
-    )
-    spark.sparkContext.setLogLevel("ERROR")
-
-    try:
-        output_options = None
-        if _source_name().lower().endswith(".csv"):
-            output_options = {
-                "header": True,
-                "inferSchema": True,
-            }
-
-        output_data = mario.transform(
-            spark,
-            _output_path(),
-            read_options=output_options,
-            count_duplicates=False,
-        )
-        mario.Print(output_data)
-    finally:
-        spark.stop()
+    return mario.print_hdfs(_output_path())
 
 
 def stop():

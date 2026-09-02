@@ -186,6 +186,16 @@ _iris_listen() {
     echo "Log: $iris_log_file"
 }
 
+_iris_print() {
+    local iris_project="$HOME/BigData/iris_"
+    local iris_hadoop="$HOME/BigData/hadoop-3.5.0"
+
+    HADOOP_HOME="$iris_hadoop" \
+    HADOOP_CONF_DIR="$iris_hadoop/etc/hadoop" \
+        python3 "$iris_project/burning_plumber/print.py" \
+            "hdfs://localhost:9000/user/zelanard/Output_dir/transformed_iris.csv"
+}
+
 iris() {
     case "${1:-}" in
         extract|flow|stop)
@@ -196,15 +206,7 @@ iris() {
             _iris_listen "$@"
             ;;
         print)
-            local iris_log_file iris_status
-            iris_log_file="$(mktemp)"
-            _iris_etl print 2>"$iris_log_file"
-            iris_status=$?
-            if (( iris_status != 0 )); then
-                command cat "$iris_log_file" >&2
-            fi
-            command rm -f -- "$iris_log_file"
-            return "$iris_status"
+            _iris_print
             ;;
         reset)
             read -r -p "Delete all Iris pipeline data? [y/N] " answer
