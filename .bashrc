@@ -117,6 +117,10 @@ if ! shopt -oq posix; then
 fi
 
 #JONAS
+#JAVA
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+export PATH="$JAVA_HOME/bin:$PATH"
+
 # Hadoop
 export HADOOP_HOME=/home/zelanard/BigData/hadoop-3.5.0
 export HADOOP_INSTALL="$HADOOP_HOME"
@@ -198,7 +202,7 @@ _iris_print() {
 
 iris() {
     case "${1:-}" in
-        extract|flow|stop)
+        extract|flow|show-hive|stop)
             _iris_etl "$@"
             ;;
         listen)
@@ -213,7 +217,7 @@ iris() {
             [[ "$answer" =~ ^[Yy]$ ]] && _iris_etl reset
             ;;
         help|"")
-            echo "Usage: iris {extract|flow|listen|print|stop|reset}"
+            echo "Usage: iris {extract|flow|listen|print|show-hive|stop|reset}"
             ;;
         *)
             echo "Unknown Iris command: $1" >&2
@@ -227,7 +231,7 @@ _iris_completion() {
 
     if (( COMP_CWORD == 1 )); then
         COMPREPLY=(
-            $(compgen -W "extract flow listen print stop reset" -- "$current")
+            $(compgen -W "extract flow listen print show-hive stop reset" -- "$current")
         )
     elif [[ "${COMP_WORDS[1]}" == "listen" ]]; then
         COMPREPLY=(
@@ -237,3 +241,8 @@ _iris_completion() {
 }
 
 complete -F _iris_completion iris
+
+
+#Hive
+export HIVE_HOME="/home/zelanard/BigData/apache-hive-4.2.1-bin"
+export PATH=$PATH:$HIVE_HOME/bin

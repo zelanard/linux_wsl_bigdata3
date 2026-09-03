@@ -80,3 +80,7 @@
 # - SPARK_BEELINE_MEMORY, Memory for beeline (e.g. 1000M, 2G) (Default: 1G)
 
 SPARK_MASTER_HOST=0.0.0.0
+
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+export HADOOP_HOME=/home/zelanard/BigData/hadoop-3.5.0
+export HADOOP_CONF_DIR="$HADOOP_HOME/etc/hadoop"

@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from .extract import INPUT_DIR, run_hdfs
+from .hive import HIVE_JDBC_URL, HIVE_WAREHOUSE_DIR, load_hive
 from .load import OUTPUT_DIR, load
 from .transform import transform
 
@@ -72,6 +73,10 @@ def listen(
     column_names=None,
     filter_column=None,
     filter_value=None,
+    hive_database=None,
+    hive_table=None,
+    hive_warehouse_dir=HIVE_WAREHOUSE_DIR,
+    hive_jdbc_url=HIVE_JDBC_URL,
 ):
     """Transform and load whenever the HDFS input content changes.
 
@@ -120,6 +125,19 @@ def listen(
                             file_format=file_format,
                             write_options=write_options,
                         )
+                        if hive_database is not None or hive_table is not None:
+                            if not hive_database or not hive_table:
+                                raise ValueError(
+                                    "Både Hive-database og Hive-tabel skal angives"
+                                )
+                            load_hive(
+                                transformed_data,
+                                hive_database,
+                                hive_table,
+                                warehouse_dir=hive_warehouse_dir,
+                                jdbc_url=hive_jdbc_url,
+                                mode="overwrite",
+                            )
                     finally:
                         if creates_spark:
                             active_spark.stop()

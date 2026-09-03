@@ -13,6 +13,10 @@ SOURCE_URL = (
 HDFS_URI = "hdfs://localhost:9000"
 INPUT_DIR = "/user/zelanard/Input_dir"
 OUTPUT_DIR = f"{HDFS_URI}/user/zelanard/Output_dir"
+HIVE_DATABASE = "iris_db"
+HIVE_TABLE = "iris"
+HIVE_WAREHOUSE_DIR = f"{HDFS_URI}/user/hive/warehouse"
+HIVE_JDBC_URL = "jdbc:hive2://localhost:10000/default"
 READ_OPTIONS = {
     "header": True,
     "inferSchema": True,
@@ -70,11 +74,20 @@ def flow():
             filter_value=FILTER_VALUE,
         )
         mario.Print(transformed_data)
-        return mario.load(
+        output_path = mario.load(
             transformed_data,
             SOURCE_URL,
             output_dir=OUTPUT_DIR,
         )
+        mario.load_hive(
+            transformed_data,
+            HIVE_DATABASE,
+            HIVE_TABLE,
+            warehouse_dir=HIVE_WAREHOUSE_DIR,
+            jdbc_url=HIVE_JDBC_URL,
+            mode="overwrite",
+        )
+        return output_path
     finally:
         spark.stop()
 
@@ -99,6 +112,10 @@ def listen(poll_interval=2.0):
         column_names=COLUMN_NAMES,
         filter_column=FILTER_COLUMN,
         filter_value=FILTER_VALUE,
+        hive_database=HIVE_DATABASE,
+        hive_table=HIVE_TABLE,
+        hive_warehouse_dir=HIVE_WAREHOUSE_DIR,
+        hive_jdbc_url=HIVE_JDBC_URL,
     )
 
 
@@ -106,6 +123,16 @@ def print_output():
     """Print the current transformed HDFS output as a CLI table."""
 
     return mario.print_hdfs(_output_path())
+
+
+def show_hive():
+    """Show the Hive table using the built-in Beeline client."""
+
+    return mario.show_hive(
+        HIVE_DATABASE,
+        HIVE_TABLE,
+        jdbc_url=HIVE_JDBC_URL,
+    )
 
 
 def stop():
@@ -124,7 +151,15 @@ def main():
     parser = argparse.ArgumentParser(description="CSV/JSON HDFS ETL controller")
     parser.add_argument(
         "command",
-        choices=("extract", "flow", "listen", "print", "stop", "reset"),
+        choices=(
+            "extract",
+            "flow",
+            "listen",
+            "print",
+            "show-hive",
+            "stop",
+            "reset",
+        ),
     )
     parser.add_argument(
         "--poll-interval",
@@ -139,6 +174,7 @@ def main():
         "flow": flow,
         "listen": lambda: listen(arguments.poll_interval),
         "print": print_output,
+        "show-hive": show_hive,
         "stop": stop,
         "reset": reset,
     }
