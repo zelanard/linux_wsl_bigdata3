@@ -16,12 +16,13 @@
 !stop-bigdata.sh
 !.bashrc
 
-#configuration files
-!BigData/apache-maven-3.9.4/conf/hive-site.xml
-!BigData/hadoop-3.5.0/etc/hadoop/etc/core-site.xml
-!BigData/hadoop-3.5.0/etc/hadoop/etc/hdfs-site.xml
+# HDFS And Spark
+!BigData/apache-hive-4.2.1-bin/conf/hive-site.xml
+!BigData/hadoop-3.5.0/etc/hadoop/core-site.xml
+!BigData/hadoop-3.5.0/etc/hadoop/hdfs-site.xml
+!BigData/hadoop-3.5.0/etc/hadoop/hadoop-env.sh
+!BigData/spark-4.2.0-bin-hadoop3/conf/spark-env.sh
 !BigData/hadoop-3.5.0/etc/hadoop/hdfs/*
-!BigData/hadoop-3.5.0/etc/hadoop/etc/hadoop-env.sh
 
 # Iris source code
 !BigData/iris_/main.py
