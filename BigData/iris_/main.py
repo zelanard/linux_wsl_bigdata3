@@ -135,6 +135,72 @@ def show_hive():
     )
 
 
+def _generate_diagram(generator, app_name, *arguments, **options):
+    """Load the Hive table and pass its DataFrame to a diagram generator."""
+
+    spark = (
+        SparkSession.builder
+        .appName(app_name)
+        .getOrCreate()
+    )
+    try:
+        dataframe = mario.hive_dataframe(
+            spark,
+            HIVE_DATABASE,
+            HIVE_TABLE,
+            jdbc_url=HIVE_JDBC_URL,
+        )
+        return generator(
+            dataframe,
+            *arguments,
+            output_dir=OUTPUT_DIR,
+            **options,
+        )
+    finally:
+        spark.stop()
+
+
+def generate_scatter():
+    """Generate the Iris sepal scatter plot from Hive data."""
+
+    return _generate_diagram(
+        mario.generate_scatter,
+        "IrisScatterPlot",
+        "sepal_length",
+        "sepal_width",
+        title="Iris sepal measurements",
+        x_axis="Sepal length (cm)",
+        y_axis="Sepal width (cm)",
+    )
+
+
+def generate_histogram():
+    """Generate the Iris sepal-length histogram from Hive data."""
+
+    return _generate_diagram(
+        mario.generate_histogram,
+        "IrisHistogram",
+        "sepal_length",
+        title="Iris sepal-length distribution",
+        x_axis="Sepal length (cm)",
+        y_axis="Frequency",
+    )
+
+
+def generate_boxplot():
+    """Generate the Iris petal-length boxplot from Hive data."""
+
+    return _generate_diagram(
+        mario.generate_boxplot,
+        "IrisBoxplot",
+        "petal_length",
+        category_column="species",
+        title="Iris petal length by species",
+        x_axis="Species",
+        y_axis="Petal length (cm)",
+    )
+
+
 def stop():
     """Stop the active listener without deleting data."""
 
@@ -157,9 +223,15 @@ def main():
             "listen",
             "print",
             "show-hive",
+            "generate",
             "stop",
             "reset",
         ),
+    )
+    parser.add_argument(
+        "diagram",
+        nargs="?",
+        choices=("scatter", "histogram", "boxplot"),
     )
     parser.add_argument(
         "--poll-interval",
@@ -178,7 +250,19 @@ def main():
         "stop": stop,
         "reset": reset,
     }
-    commands[arguments.command]()
+    diagram_commands = {
+        "scatter": generate_scatter,
+        "histogram": generate_histogram,
+        "boxplot": generate_boxplot,
+    }
+    if arguments.command == "generate":
+        if arguments.diagram is None:
+            parser.error("generate kræver scatter, histogram eller boxplot")
+        diagram_commands[arguments.diagram]()
+    else:
+        if arguments.diagram is not None:
+            parser.error("diagramtypen kan kun bruges sammen med generate")
+        commands[arguments.command]()
 
 
 if __name__ == "__main__":

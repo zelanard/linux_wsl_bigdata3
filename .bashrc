@@ -145,12 +145,20 @@ _iris_etl() {
     local iris_project="$HOME/BigData/iris_"
     local iris_spark="$HOME/BigData/spark-4.2.0-bin-hadoop3"
     local iris_hadoop="$HOME/BigData/hadoop-3.5.0"
+    local iris_python="$iris_project/.venv/bin/python"
+
+    if [[ ! -x "$iris_python" ]]; then
+        echo "Iris dependencies are missing; install requirements in $iris_project/.venv" >&2
+        return 1
+    fi
 
     (
         cd "$iris_project" || exit 1
 
         HADOOP_HOME="$iris_hadoop" \
         HADOOP_CONF_DIR="$iris_hadoop/etc/hadoop" \
+        PYSPARK_DRIVER_PYTHON="$iris_python" \
+        PYSPARK_PYTHON="$iris_python" \
         "$iris_spark/bin/spark-submit" \
             --master spark://localhost:7077 \
             main.py "$@"
@@ -161,10 +169,16 @@ _iris_listen() {
     local iris_project="$HOME/BigData/iris_"
     local iris_spark="$HOME/BigData/spark-4.2.0-bin-hadoop3"
     local iris_hadoop="$HOME/BigData/hadoop-3.5.0"
+    local iris_python="$iris_project/.venv/bin/python"
     local iris_state_dir="$HOME/.local/state/burning_plumber"
     local iris_log_file="$iris_state_dir/listener.log"
     local iris_pid_file="$iris_state_dir/listener.pid"
     local iris_listener_pid
+
+    if [[ ! -x "$iris_python" ]]; then
+        echo "Iris dependencies are missing; install requirements in $iris_project/.venv" >&2
+        return 1
+    fi
 
     if [[ -r "$iris_pid_file" ]]; then
         read -r iris_listener_pid < "$iris_pid_file"
@@ -180,6 +194,8 @@ _iris_listen() {
         nohup env \
             HADOOP_HOME="$iris_hadoop" \
             HADOOP_CONF_DIR="$iris_hadoop/etc/hadoop" \
+            PYSPARK_DRIVER_PYTHON="$iris_python" \
+            PYSPARK_PYTHON="$iris_python" \
             "$iris_spark/bin/spark-submit" \
                 --master spark://localhost:7077 \
                 "$iris_project/main.py" listen "$@" \
@@ -202,7 +218,7 @@ _iris_print() {
 
 iris() {
     case "${1:-}" in
-        extract|flow|show-hive|stop)
+        extract|flow|show-hive|generate|stop)
             _iris_etl "$@"
             ;;
         listen)
@@ -217,7 +233,7 @@ iris() {
             [[ "$answer" =~ ^[Yy]$ ]] && _iris_etl reset
             ;;
         help|"")
-            echo "Usage: iris {extract|flow|listen|print|show-hive|stop|reset}"
+            echo "Usage: iris {extract|flow|listen|print|show-hive|generate {scatter|histogram|boxplot}|stop|reset}"
             ;;
         *)
             echo "Unknown Iris command: $1" >&2
@@ -231,7 +247,11 @@ _iris_completion() {
 
     if (( COMP_CWORD == 1 )); then
         COMPREPLY=(
-            $(compgen -W "extract flow listen print show-hive stop reset" -- "$current")
+            $(compgen -W "extract flow listen print show-hive generate stop reset" -- "$current")
+        )
+    elif (( COMP_CWORD == 2 )) && [[ "${COMP_WORDS[1]}" == "generate" ]]; then
+        COMPREPLY=(
+            $(compgen -W "scatter histogram boxplot" -- "$current")
         )
     elif [[ "${COMP_WORDS[1]}" == "listen" ]]; then
         COMPREPLY=(

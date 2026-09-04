@@ -288,3 +288,42 @@ SELECT * FROM `{table}` LIMIT {limit};
 """.strip()
     runner = beeline_runner or run_beeline
     return runner(sql, jdbc_url=jdbc_url)
+
+
+def hive_dataframe(
+    spark,
+    database,
+    table,
+    *,
+    jdbc_url=HIVE_JDBC_URL,
+    beeline_runner=None,
+):
+    """Create a Spark DataFrame from a table registered in Hive.
+
+    Hive owns the table metadata, while Spark reads the Parquet files from the
+    HDFS location registered for that external table. This keeps the method
+    compatible with the project's separate Spark and Hive metastores.
+    """
+
+    database = _simple_identifier(database, "Databasenavnet")
+    table = _simple_identifier(table, "Tabelnavnet")
+    if spark.sparkContext.master.startswith("local"):
+        raise RuntimeError("Brug Spark-clusteren, ikke local mode")
+
+    qualified_table = f"`{database}`.`{table}`"
+    runner = beeline_runner or run_beeline
+    formatted = runner(
+        f"DESCRIBE FORMATTED {qualified_table};",
+        jdbc_url=jdbc_url,
+        capture_output=True,
+    )
+    table_location = _parse_location(formatted.stdout)
+    if not table_location:
+        raise HiveLoadError(
+            f"Hive returnerede ingen HDFS-placering for {database}.{table}"
+        )
+    table_location = _validate_hdfs_uri(
+        table_location,
+        label="Hive-tabellens placering",
+    )
+    return spark.read.parquet(table_location)

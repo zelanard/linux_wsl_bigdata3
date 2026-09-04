@@ -7,13 +7,21 @@
 # Keep this file
 !./.gitignore
 
-# Files you want included
+# Files
 !BigData/hadoop-3.5.0/etc/hadoop/hadoop-env.sh
 !.bashrc
 !BigData/hadoop-3.5.0/hdfs
 !spark-env.sh
 !start-bigdata.sh
 !stop-bigdata.sh
+!.bashrc
+
+#configuration files
+!BigData/apache-maven-3.9.4/conf/hive-site.xml
+!BigData/hadoop-3.5.0/etc/hadoop/etc/core-site.xml
+!BigData/hadoop-3.5.0/etc/hadoop/etc/hdfs-site.xml
+!BigData/hadoop-3.5.0/etc/hadoop/hdfs/*
+!BigData/hadoop-3.5.0/etc/hadoop/etc/hadoop-env.sh
 
 # Iris source code
 !BigData/iris_/main.py
